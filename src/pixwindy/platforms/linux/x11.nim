@@ -347,6 +347,12 @@ proc closed*(window: Window): bool = window.closed
 proc close*(window: Window) =
   destroy window
 
+proc size*(window: Window): IVec2 =
+  var
+    attributes: XWindowAttributes
+  display.XGetWindowAttributes(window.handle, attributes.addr)
+  return attributes.size
+
 proc draw*(window: Window, image: Image) =
   proc asXImage(data: pointer, size: IVec2): XImage = XImage(
     width: size.x,
@@ -362,8 +368,8 @@ proc draw*(window: Window, image: Image) =
     bytesPerLine: int32 size.x * ColorRgba.sizeof
   )
 
-  if window.prevSize.x * window.prevSize.y == 0: return
-  assert image.width == window.prevSize.x and image.height == window.prevSize.y
+  if window.size.x * window.size.y == 0: return
+  assert image.width == window.size.x and image.height == window.size.y
 
   # copy rgb data
   for i, v in image.data:
@@ -372,9 +378,9 @@ proc draw*(window: Window, image: Image) =
     px[].g = v.g
     px[].r = v.r
 
-  var ximg = asXImage(window.pixels[0].unsafeaddr, window.prevSize)
-  display.XPutImage(window.handle, window.gc, ximg.addr, 0, 0, 0, 0, window.prevSize.x.uint32, window.prevSize.y.uint32)
 
+  var ximg = asXImage(window.pixels[0].unsafeaddr, window.size)
+  display.XPutImage(window.handle, window.gc, ximg.addr, 0, 0, 0, 0, window.size.x.uint32, window.size.y.uint32)
   # signal that frame was drawn
   display.XSyncSetCounter(window.xSyncCounter, window.lastSync)
 
@@ -433,12 +439,6 @@ proc `pos=`*(window: Window, v: IVec2) =
     return
   display.XMoveWindow(window.handle, v.x, v.y)
   blockUntil(originalValue != window.pos)
-
-proc size*(window: Window): IVec2 =
-  var
-    attributes: XWindowAttributes
-  display.XGetWindowAttributes(window.handle, attributes.addr)
-  return attributes.size
 
 proc framebufferSize*(window: Window): IVec2 =
   window.size
@@ -787,7 +787,7 @@ proc pollEvents(window: Window) =
 
       if ev.configure.size != window.prevSize:
         window.prevSize = ev.configure.size
-        window.pixels.setLen window.prevSize.x * window.prevSize.y
+        window.pixels.setLen window.size.x * window.size.y
         if window.onResize != nil:
           window.onResize()
 
