@@ -348,10 +348,7 @@ proc close*(window: Window) =
   destroy window
 
 proc size*(window: Window): IVec2 =
-  var
-    attributes: XWindowAttributes
-  display.XGetWindowAttributes(window.handle, attributes.addr)
-  return attributes.size
+  window.prevSize
 
 proc draw*(window: Window, image: Image) =
   proc asXImage(data: pointer, size: IVec2): XImage = XImage(
