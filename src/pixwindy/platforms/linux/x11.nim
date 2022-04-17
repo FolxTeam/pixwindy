@@ -6,7 +6,8 @@ import x11/[keysym, x, xevent, xlib]
 type
   XWindow = x.Window
 
-  Window* = ref object
+  Window* = ref WindowObj
+  WindowObj = object
     onCloseRequest*: Callback
     onMove*: Callback
     onResize*: Callback
@@ -327,25 +328,26 @@ proc queryKeyboardState(): set[0..255] =
   display.XQueryKeymap(r)
   return cast[ptr set[0..255]](r.addr)[]
 
-proc destroy(window: Window) =
-  if window.ic != nil:
-    XDestroyIC(window.ic)
-  if window.im != nil:
-    XCloseIM(window.im)
-  if window.gc != nil:
-    display.XFreeGC(window.gc)
-  if window.handle != 0:
-    display.XDestroyWindow(window.handle)
-  if window.xSyncCounter.int != 0:
-    display.XSyncDestroyCounter(window.xSyncCounter)
-  wasMoved window[]
-  window.closed = true
-  window.closeRequested = true
-
 proc closed*(window: Window): bool = window.closed
 
 proc close*(window: Window) =
-  destroy window
+  if window.ic != nil:
+    XDestroyIC(window.ic)
+    window.ic = nil
+  if window.im != nil:
+    XCloseIM(window.im)
+    window.im = nil
+  if window.gc != nil:
+    display.XFreeGC(window.gc)
+    window.gc = nil
+  if window.handle != 0:
+    display.XDestroyWindow(window.handle)
+    window.handle = 0
+  if window.xSyncCounter.int != 0:
+    display.XSyncDestroyCounter(window.xSyncCounter)
+    window.xSyncCounter = 0.XSyncCounter
+  window.closed = true
+  window.closeRequested = true
 
 proc size*(window: Window): IVec2 =
   window.prevSize
@@ -605,7 +607,9 @@ proc newWindow*(
 ): Window =
   ## Creates a new window. Intitializes Windy if needed.
   init()
-  result = Window()
+  new result, proc(window: Window) =
+    close window
+  
   result.innerDecorated = true
   result.runeInputEnabled = true
 
@@ -999,9 +1003,7 @@ proc pollEvents* =
   windows = @[]
 
   for window in ws:
-    if window.closed:
-      destroy window
-    else:
+    if not window.closed:
       windows.add window
 
   if clipboardWindow != 0:
