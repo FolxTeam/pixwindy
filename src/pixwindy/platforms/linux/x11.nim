@@ -612,6 +612,7 @@ proc newWindow*(
   
   result.innerDecorated = true
   result.runeInputEnabled = true
+  result.prevSize = size
 
   let root = display.defaultRootWindow
 
