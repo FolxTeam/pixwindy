@@ -745,7 +745,7 @@ proc draw*(window: Window, image: Image) =
   defer: discard window.hwnd.EndPaint(ps.addr)
 
   if image.width * image.height == 0: return
-  assert image.width == window.size.x and image.height == window.size.y
+  # assert image.width == window.size.x and image.height == window.size.y
   
   if image.width != window.buffer.w or image.height != window.buffer.h:
     if window.buffer.pixels != nil:
