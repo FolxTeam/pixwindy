@@ -1,3 +1,5 @@
+Deprecated. Use [siwin](https://github.com/levovix0/siwin) instead.
+
 # PixWindy
 
 Windy is a windowing library for Nim that uses OS native APIs to manage windows, set up OpenGL and receive mouse and keyboard input.
